@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyOCR</title>
+    <style>
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+        }
+
+        .cell {
+            background-color: lightgray;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.6s;
+        }
+
+        .pink {
+            background-color: pink !important;
+        }
+
+        .lightgreen {
+            background-color: palegreen !important;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+    </style>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+</head>
+<body>
+
+<div class="grid" id="board">
+
+    <div class="cell" data-number="1"></div>
+    <div class="cell" data-number="2"></div>
+    <div class="cell" data-number="3"></div>
+    <div class="cell" data-number="4"></div>
+    <div class="cell" data-number="5"></div>
+    <div class="cell" data-number="6"></div>
+    <div class="cell" data-number="7"></div>
+    <div class="cell" data-number="8"></div>
+    <div class="cell" data-number="9"></div>
+</div>
+
+<script>
+    let currentPlayer = "Player 1";
+    let currentColor = "pink";
+    let player1Tiles = [];
+    let player2Tiles = [];
+    let currentPlayerTiles = player1Tiles;
+    const deg = 180;
+
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+            if (!cell.classList.contains('pink') && !cell.classList.contains('lightgreen')) {
+                // update cell color and player
+                cell.classList.add(currentColor);
+                cell.classList.add('flipped');
+                const cellNumber = parseInt(cell.dataset.number);
+
+                // update the tiles for respective player
+                if (currentPlayer === 'Player 1') {
+                    player1Tiles.push(cellNumber);
+                    currentPlayerTiles = player1Tiles;
+                } else {
+                    player2Tiles.push(cellNumber);
+                    currentPlayerTiles = player2Tiles;
+                }
+
+                // console.log("tiles data:\n p1\n"+p1_tiles+"\np2:\n"+p2_tiles);
+
+                // api to process clicked tile
+                fetch('/handle_click', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        number: cellNumber,
+                        color: currentColor,
+                        player: currentPlayer,
+                        player_tiles: currentPlayerTiles
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data.message);
+
+                        if (data.win === 1) {
+                            swal("BAZINGA !!!", data.message, "success")
+                                .then((value) => {
+                                    if (value) location.reload();//history.go(0);
+                                });
+
+                            // if (confirm(data.message)) {
+                            //     history.go(0);
+                            // }
+                        }
+
+                    });
+
+                // update player and color
+                currentPlayer = currentPlayer === "Player 1" ? "Player 2" : "Player 1";
+                currentColor = currentColor === "pink" ? "lightgreen" : "pink";
+            }
+        });
+    });
+</script>
+</body>
+</html>
